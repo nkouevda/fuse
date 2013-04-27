@@ -1,0 +1,12 @@
+# Tomer Kaftan, Nikita Kouevda, Daniel Wong
+# 2013/04/27
+
+# OS X Finder
+.DS_Store
+
+# Temporary Vim files
+*.swp
+
+# Compiled Python files
+*.pyc
+__pycache__
