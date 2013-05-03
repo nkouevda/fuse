@@ -1,6 +1,13 @@
 NODE_GRAPH = {}
 COMPONENTS = []
 
+class Connectable():
+    def __rshift__(self, other):
+        return connect(self, other)
+
+    def __rrshift__(self, other):
+        return connect(other, self)
+
 def connect(fst, snd):
     if isinstance(fst, Node) and isinstance(snd, Node):
         # Connect two nodes
@@ -38,37 +45,22 @@ def connect(fst, snd):
         return Component(inp, out)
 
 _nextNum = 0
-class Node():
+class Node(Connectable):
     def __init__(self):
         global _nextNum
         self.nodeNum = _nextNum
         NODE_GRAPH[_nextNum] = set()
         _nextNum += 1
 
-    def __rshift__(self, other):
-        return connect(self, other)
-
 GROUND = Node()
 
-class Component():
+class Component(Connectable):
     # Try having base component __init__ to set self.inp and self.out so inp() and out() must be used to access?
     def __init__(self, inp, out):
         self.inp = Bundle(inp)
         self.out = Bundle(out)
 
-    def __rshift__(self, other):
-        return connect(self, other)
-
-    def __rrshift__(self, other):
-        return connect(other, self)
-
-class Bundle(list):
-    def __rshift__(self, other):
-        return connect(self, other)
-
-    def __rrshift__(self, other):
-        return connect(other, self)
-
+class Bundle(list, Connectable):
     # Make sure Bundles are returned from interactions w/ lists
     def copy(self):
         return Bundle(super().copy())
