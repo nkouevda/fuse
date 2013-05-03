@@ -20,64 +20,112 @@ class Node():
 
     def __rshift__(self, other):
         num1 = self.getNodeNum()
-        num2 = other.getInput().getNodeNum()
+        num2 = other.getNodeNum()
 
         # It needs to be an undirected graph so add both directions
         NODE_GRAPH[num1].add(num2)
         NODE_GRAPH[num2].add(num1)
 
-        return ConnectedComponentsWrapper(self, other)
+        return IOComponentWrapper(self, other)
 
 GROUND = Node()
 
 class Component():
     def getInput(self):
-        return self.input
+        return Bundle(self.input)
 
     def getOutput(self):
-        return self.output
+        return Bundle(self.output)
 
     def __rshift__(self, other):
-        self.output >> other
-        return ConnectedComponentsWrapper(self, other)
+        if (isinstance(other, Node)):
+            self.getOutput()[0] >> other
+            return IOComponentWrapper(self.getInput(), [other])
+        elif isinstance(other, Component):
+            for i, j in zip(self.getOutput(), other.getInput()):
+                try:
+                    i = Bundle(i)
+                except TypeError:
+                    pass
+                try:
+                    j = Bundle(j)
+                except TypeError:
+                    pass
+                i >> j
+            return IOComponentWrapper(self.getInput(), other.getOutput())
+        else:
+            for i, j in zip(self.getOutput(), other):
+                try:
+                    i = Bundle(i)
+                except TypeError:
+                    pass
+                try:
+                    j = Bundle(j)
+                except TypeError:
+                    pass
+                i >> j
+            return IOComponentWrapper(self.getInput(), other)
 
-class ConnectedComponentsWrapper(Component):
+    def __rrshift__(self, other):
+        if (isinstance(other, Node)):
+            other >> self.getInput()[0]
+            return IOComponentWrapper([other], self.getOutput())
+        elif isinstance(other, Component):
+            for i, j in zip(other.getOutput(), self.getInput()):
+                try:
+                    i = Bundle(i)
+                except TypeError:
+                    pass
+                try:
+                    j = Bundle(j)
+                except TypeError:
+                    pass
+                i >> j
+            return IOComponentWrapper(other.getInput(), self.getOutput())
+        else:
+            for i, j in zip(other, self.getInput()):
+                try:
+                    i = Bundle(i)
+                except TypeError:
+                    pass
+                try:
+                    j = Bundle(j)
+                except TypeError:
+                    pass
+                i >> j
+            return IOComponentWrapper(other, self.getOutput())
+
+class IOComponentWrapper(Component):
     def __init__(self, input, output):
-        """
-        Takes two components as input, and sets the input of one as the input
-        to this component, and the output of the other as the output for this
-        component.
-        :param input: This will be treated as the input for this component
-        :param output: This will be treated as the output for this component
-        """
-        self.input = input.getInput()
-        self.output = output.getOutput()
+        self.input = input
+        self.output = output
 
-class Bundle(list):
+class Bundle(Component, list):
     def getInput(self):
         return self
 
     def getOutput(self):
         return self
 
-    def __rshift__(self, other):
-        for i, j in zip(self, other.getInput()):
-            i >> j
+    # Make sure Bundles are returned from interactions w/ lists
+    def copy(self):
+        return Bundle(super().copy())
 
-        return ConnectedComponentsWrapper(self, other)
+    def __mul__(self, other):
+        return Bundle(super().__mul__(other))
 
-''' Wrap the output of all relevant list functions (e.g. slicing) with a Bundle
-'''
-def _listFuncWrapper(func):
-    def newFunc(*args, **kwargs):
-        out = func(*args, **kwargs)
-        if not isinstance(out, Bundle) and isinstance(out, list):
-            out = Bundle(out)
-        return out
-    return newFunc
-for attr in list.__dict__:
-    if callable(getattr(list, attr)):
-        setattr(Bundle, attr, _listFuncWrapper(getattr(list, attr)))
+    def __rmul__(self, other):
+        return Bundle(super().__rmul__(other))
+
+    def __add__(self, other):
+        return Bundle(super().__add__(other))
+
+    def __radd__(self, other):
+        return Bundle(super().__add__(other))
+
+    def __getitem__(self, other):
+        x = super().__getitem__(other)
+        return Bundle(x) if isinstance(x, list) else x
 
 class Bus(Bundle):
     def __init__(self, num):
