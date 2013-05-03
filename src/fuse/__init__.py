@@ -1,19 +1,19 @@
 COMPONENTS = []
-NETLIST = {}
 NODE_GRAPH = {}
 
-def buildNetlist():
+def connectedComponents(graph):
     def explore(node, net):
-        if not node in NETLIST.keys():
-            NETLIST[node] = net
-            for nextNode in NODE_GRAPH[node]:
+        if not node in netlist.keys():
+            netlist[node] = net
+            for nextNode in graph[node]:
                 explore(nextNode, net)
-
+    netlist = {}
     net = 0
-    for node in sorted(NODE_GRAPH.keys()):
-        if net in NETLIST.values():
+    for node in sorted(graph.keys()):
+        if net in netlist.values():
             net += 1
         explore(node, net)
+    return netlist
 
 class Connectable():
     def __rshift__(self, other):

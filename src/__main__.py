@@ -1,6 +1,5 @@
 from fuse import *
 
-
 class Comparator(Component):
     def __init__(self, bits):
         inp = [Bus(bits), Bus(bits)]
@@ -42,6 +41,14 @@ class OddEvenMergeSort(Component):
 
             [a, b] >> OddEvenMerger(n // 2, bits) >> self.out
 
-x = OddEvenMergeSort(8, 1)
+x = OddEvenMergeSort(4, 1)
 
 print(NODE_GRAPH)
+
+NETLIST = connectedComponents(NODE_GRAPH)
+INV_NETLIST = {v:[] for v in NETLIST.values()}
+for v in NETLIST.keys():
+    INV_NETLIST[NETLIST[v]].append(v)
+
+print(NETLIST)
+print(INV_NETLIST)
