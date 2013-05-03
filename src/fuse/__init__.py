@@ -1,6 +1,42 @@
 NODE_GRAPH = {}
 COMPONENTS = []
 
+def connect(fst, snd):
+    if isinstance(fst, Node) and isinstance(snd, Node):
+        # Connect two nodes
+        num1 = fst.nodeNum
+        num2 = snd.nodeNum
+
+        # It needs to be an undirected graph so add both directions
+        NODE_GRAPH[num1].add(num2)
+        NODE_GRAPH[num2].add(num1)
+
+        return Component([fst], [snd])
+
+    else:
+        if isinstance(fst, Node):
+            inp = [fst]
+            fst = [fst]
+        elif isinstance(fst, Component):
+            inp = fst.inp
+            fst = fst.out
+        else:
+            inp = fst
+
+        if isinstance(snd, Node):
+            out = [snd]
+            snd = [snd]
+        elif isinstance(snd, Component):
+            out = snd.out
+            snd = snd.inp
+        else:
+            out = snd
+
+        for i, j in zip(fst, snd):
+            connect(i, j)
+
+        return Component(inp, out)
+
 _nextNum = 0
 class Node():
     def __init__(self):
@@ -10,80 +46,28 @@ class Node():
         _nextNum += 1
 
     def __rshift__(self, other):
-        num1 = self.nodeNum
-        num2 = other.nodeNum
-
-        # It needs to be an undirected graph so add both directions
-        NODE_GRAPH[num1].add(num2)
-        NODE_GRAPH[num2].add(num1)
-
-        return IOComponentWrapper([self], [other])
+        return connect(self, other)
 
 GROUND = Node()
 
 class Component():
-    def getInput(self):
-        return Bundle(self.input)
-
-    def getOutput(self):
-        return Bundle(self.output)
-
-    def bundleIfIterables(self, i, j):
-        try:
-            i = Bundle(i)
-        except TypeError:
-            pass
-        try:
-            j = Bundle(j)
-        except TypeError:
-            pass
-        return i, j
+    # Try having base component __init__ to set self.inp and self.out so inp() and out() must be used to access?
+    def __init__(self, inp, out):
+        self.inp = Bundle(inp)
+        self.out = Bundle(out)
 
     def __rshift__(self, other):
-        if isinstance(other, Node):
-            self.getOutput()[0] >> other
-            return IOComponentWrapper(self.getInput(), [other])
-        elif isinstance(other, Component):
-            for i, j in zip(self.getOutput(), other.getInput()):
-                i, j = self.bundleIfIterables(i, j)
-                i >> j
-            return IOComponentWrapper(self.getInput(), other.getOutput())
-        else:
-            for i, j in zip(self.getOutput(), other):
-                i, j = self.bundleIfIterables(i, j)
-                i >> j
-            return IOComponentWrapper(self.getInput(), other)
+        return connect(self, other)
 
     def __rrshift__(self, other):
-        if isinstance(other, Node):
-            other >> self.getInput()[0]
-            return IOComponentWrapper([other], self.getOutput())
-        elif isinstance(other, Component):
-            for i, j in zip(other.getOutput(), self.getInput()):
-                i, j = self.bundleIfIterables(i, j)
-                i >> j
-            return IOComponentWrapper(other.getInput(), self.getOutput())
-        else:
-            for i, j in zip(other, self.getInput()):
-                i, j = self.bundleIfIterables(i, j)
-                i >> j
-            return IOComponentWrapper(other, self.getOutput())
+        return connect(other, self)
 
-#Alias getInput and getOutput
-Component.inp = Component.getInput
-Component.out = Component.getOutput
+class Bundle(list):
+    def __rshift__(self, other):
+        return connect(self, other)
 
-class IOComponentWrapper(Component):
-    def __init__(self, inp, out):
-        self.input = inp
-        self.output = out
-
-class Bundle(Component, list):
-    def getInput(self):
-        return self
-
-    def getOutput(self):
-        return self
+    def __rrshift__(self, other):
+        return connect(other, self)
 
     # Make sure Bundles are returned from interactions w/ lists
     def copy(self):
