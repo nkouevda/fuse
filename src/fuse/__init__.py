@@ -69,6 +69,10 @@ class Component():
                 i >> j
             return IOComponentWrapper(other, self.getOutput())
 
+#Alias getInput and getOutput
+Component.inp = Component.getInput
+Component.out = Component.getOutput
+
 class IOComponentWrapper(Component):
     def __init__(self, inp, out):
         self.input = inp
