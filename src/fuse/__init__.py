@@ -11,46 +11,47 @@ NODE_TYPE = '_NODE'
 
 class Connectable():
     def __rshift__(self, other):
-        return connect(self, other)
+        return Connectable.connect(self, other)
 
     def __rrshift__(self, other):
-        return connect(other, self)
+        return Connectable.connect(other, self)
 
-def connect(fst, snd):
-    if isinstance(fst, Node) and isinstance(snd, Node):
-        # Connect two nodes
-        num1 = fst.nodeNum
-        num2 = snd.nodeNum
+    @staticmethod
+    def connect(fst, snd):
+        if isinstance(fst, Node) and isinstance(snd, Node):
+            # Connect two nodes
+            num1 = fst.nodeNum
+            num2 = snd.nodeNum
 
-        # It needs to be an undirected graph so add both directions
-        NODE_GRAPH[num1].add(num2)
-        NODE_GRAPH[num2].add(num1)
+            # It needs to be an undirected graph so add both directions
+            NODE_GRAPH[num1].add(num2)
+            NODE_GRAPH[num2].add(num1)
 
-        return AbstractComponent([fst], [snd])
+            return AbstractComponent([fst], [snd])
 
-    else:
-        if isinstance(fst, Node):
-            inp = [fst]
-            fst = [fst]
-        elif isinstance(fst, AbstractComponent):
-            inp = fst.inp
-            fst = fst.out
         else:
-            inp = fst
+            if isinstance(fst, Node):
+                inp = [fst]
+                fst = [fst]
+            elif isinstance(fst, AbstractComponent):
+                inp = fst.inp
+                fst = fst.out
+            else:
+                inp = fst
 
-        if isinstance(snd, Node):
-            out = [snd]
-            snd = [snd]
-        elif isinstance(snd, AbstractComponent):
-            out = snd.out
-            snd = snd.inp
-        else:
-            out = snd
+            if isinstance(snd, Node):
+                out = [snd]
+                snd = [snd]
+            elif isinstance(snd, AbstractComponent):
+                out = snd.out
+                snd = snd.inp
+            else:
+                out = snd
 
-        for i, j in zip(fst, snd):
-            connect(i, j)
+            for i, j in zip(fst, snd):
+                Connectable.connect(i, j)
 
-        return AbstractComponent(inp, out)
+            return AbstractComponent(inp, out)
 
 class Node(Connectable):
     def __init__(self):
@@ -61,7 +62,8 @@ class Node(Connectable):
 GROUND = Node()
 
 class Bundle(list, Connectable):
-    # Make sure Bundles are returned from interactions w/ lists
+    # Make sure Bundles are returned from interactions w/ lists,
+    # So the Connectable connections syntax may still be used
     def copy(self):
         return Bundle(super().copy())
 
@@ -106,6 +108,8 @@ def flatten(S):
 class Component(AbstractComponent):
     def __init__(self, inp, out, name, attrs, connections=None):
         super().__init__(inp, out)
+
+        # Add the component to the current circuit environment
         idNum = TYPE_COUNT[name.upper()]
         TYPE_COUNT[name.upper()] += 1
 
@@ -121,29 +125,34 @@ class CustomComponent(Component):
             global NODE_GRAPH
             global COMPONENTS
             global TYPE_COUNT
+            global GROUND
 
+            # Store the current circuit environment
             prevNodeGraph = NODE_GRAPH
             prevComponents = COMPONENTS
             prevTypeCount = TYPE_COUNT
+            prevGround = GROUND
             prevNodeNums = flattenNodes(self.inp + self.out)
-            for i, node in enumerate(flatten(self.inp + self.out)):
-                node.nodeNum = i + 1
 
+            # Enter a new subcircuit environment for all new nodes,
+            # components, and connections to be built in
             NODE_GRAPH = {}
             COMPONENTS = []
             TYPE_COUNT = defaultdict(int)
+            GROUND = Node()
+            for node in flatten(self.inp + self.out):
+                node.nodeNum = Node().nodeNum
 
-            numIO = len(flatten(self.inp + self.out))
-            for node in range(numIO + 1):
-                NODE_GRAPH[node] = set()
-            TYPE_COUNT[NODE_TYPE] = numIO + 1
-
-            SUBCIRCUITS[componentName] = (NODE_GRAPH, COMPONENTS, flattenNodes(self.inp + self.out))
+            # Build the subcircuit
             self.build()
+            # Add the subcircuit to the global environment
+            SUBCIRCUITS[componentName] = (NODE_GRAPH, COMPONENTS, flattenNodes(self.inp + self.out))
 
+            # Restore the previous circuit environment
             NODE_GRAPH = prevNodeGraph
             COMPONENTS = prevComponents
             TYPE_COUNT = prevTypeCount
+            GROUND = prevGround
             for num, node in zip(prevNodeNums, flatten(self.inp + self.out)):
                 node.nodeNum = num
 
