@@ -1,31 +1,56 @@
 from collections import defaultdict
 
-#NODE_GRAPH, TYPE_COUNT, and COMPONENTS are temporarily replaced then restored when building a subcircuit
-NODE_GRAPH = {}
-TYPE_COUNT = defaultdict(int)
-COMPONENTS = []
+def singleton(cls):
+    return cls()
 
-SUBCIRCUITS = {}
-IMPORTED = []
-NODE_TYPE = '_NODE'
+@singleton
+class CircuitEnv():
+    def __init__(self):
+        self.__frames = []
+        self.__subcircuits = {}
+        self.newFrame()
 
-class Connectable():
-    def __rshift__(self, other):
-        return Connectable.connect(self, other)
+    def newFrame(self):
+        self.curFrame = [{0: set()}, defaultdict(int), [], 1]
+        self.__frames.append(self.curFrame)
 
-    def __rrshift__(self, other):
-        return Connectable.connect(other, self)
+    def storeFrameAsSubcircuit(self, name, connections):
+        self.__subcircuits[name.upper()] = (connections, self.curFrame)
 
-    @staticmethod
-    def connect(fst, snd):
+    def getSubcircuit(self, name):
+        return self.__subcircuits.get(name.upper())
+
+    def popFrame(self):
+        self.curFrame = self.__frames[len(self.__frames) - 2]
+        return self.__frames.pop()
+
+    def newComponent(self, name, connections, attributes):
+        name = name.upper()
+        idNum = self.curFrame[1][name]
+        self.curFrame[1][name] += 1
+
+        component = (name + str(idNum), connections, attributes)
+        self.curFrame[2].append(component)
+        return name + str(idNum)
+
+    def newNode(self):
+        frame = self.curFrame
+        nextNodeNum = frame[3]
+        frame[3] += 1
+        frame[0][nextNodeNum] = set()
+        return nextNodeNum
+
+    def connect(self, fst, snd):
         if isinstance(fst, Node) and isinstance(snd, Node):
+            frame = self.curFrame
+
             # Connect two nodes
             num1 = fst.nodeNum
             num2 = snd.nodeNum
 
             # It needs to be an undirected graph so add both directions
-            NODE_GRAPH[num1].add(num2)
-            NODE_GRAPH[num2].add(num1)
+            frame[0][num1].add(num2)
+            frame[0][num2].add(num1)
 
             return AbstractComponent([fst], [snd])
 
@@ -49,17 +74,53 @@ class Connectable():
                 out = snd
 
             for i, j in zip(fst, snd):
-                Connectable.connect(i, j)
+                self.connect(i, j)
 
             return AbstractComponent(inp, out)
 
+    def exportNetlist(self):
+        def connectedComponents(graph):
+            def explore(node, net):
+                if not node in netlist.keys():
+                    netlist[node] = net
+                    for nextNode in graph[node]:
+                        explore(nextNode, net)
+            netlist = {}
+            net = 0
+            for node in sorted(graph.keys()):
+                if net in netlist.values():
+                    net += 1
+                explore(node, net)
+            return netlist
+
+        nodeGraph = self.curFrame[0]
+        components = self.curFrame[2]
+        netlists = connectedComponents(nodeGraph)
+        netlistString = ''
+        for component in components:
+            name = component[0]
+            pins = [str(netlists[node]) for node in component[1]]
+            attrs = [str(attr).upper() for attr in component[2]]
+
+            netlistString += ' '.join([name] + pins + attrs) + '\n'
+
+        return netlistString
+
+class Connectable():
+    def __rshift__(self, other):
+        return CircuitEnv.connect(self, other)
+
+    def __rrshift__(self, other):
+        return CircuitEnv.connect(other, self)
+
+
 class Node(Connectable):
     def __init__(self):
-        self.nodeNum = TYPE_COUNT[NODE_TYPE]
-        NODE_GRAPH[self.nodeNum] = set()
-        TYPE_COUNT[NODE_TYPE] += 1
+        self.nodeNum = CircuitEnv.newNode()
 
-GROUND = Node()
+class Ground(Node):
+    def __init__(self):
+        self.nodeNum = 0
 
 class Bundle(list, Connectable):
     # Make sure Bundles are returned from interactions w/ lists,
@@ -108,51 +169,29 @@ def flatten(S):
 class Component(AbstractComponent):
     def __init__(self, inp, out, name, attrs, connections=None):
         super().__init__(inp, out)
-
-        # Add the component to the current circuit environment
-        idNum = TYPE_COUNT[name.upper()]
-        TYPE_COUNT[name.upper()] += 1
-
-        self.name = name.upper() + str(idNum)
-        self.attrs = attrs
-        self.connections = flattenNodes(connections) or flattenNodes(self.inp + self.out)
-        COMPONENTS.append((self.name, self.connections, self.attrs))#self)
+        connections = flattenNodes(connections) or flattenNodes(self.inp + self.out)
+        self.name = CircuitEnv.newComponent(name, connections, attrs)
 
 class CustomComponent(Component):
     def __init__(self, inp, out, componentName):
         super().__init__(inp, out, 'x', [componentName])
-        if not componentName in SUBCIRCUITS:
-            global NODE_GRAPH
-            global COMPONENTS
-            global TYPE_COUNT
-            global GROUND
+        if not CircuitEnv.getSubcircuit(componentName):
 
             # Store the current circuit environment
-            prevNodeGraph = NODE_GRAPH
-            prevComponents = COMPONENTS
-            prevTypeCount = TYPE_COUNT
-            prevGround = GROUND
             prevNodeNums = flattenNodes(self.inp + self.out)
 
             # Enter a new subcircuit environment for all new nodes,
             # components, and connections to be built in
-            NODE_GRAPH = {}
-            COMPONENTS = []
-            TYPE_COUNT = defaultdict(int)
-            GROUND = Node()
+            CircuitEnv.newFrame()
             for node in flatten(self.inp + self.out):
                 node.nodeNum = Node().nodeNum
 
-            # Build the subcircuit
+            # Build the subcircuit and store it
             self.build()
-            # Add the subcircuit to the global environment
-            SUBCIRCUITS[componentName] = (NODE_GRAPH, COMPONENTS, flattenNodes(self.inp + self.out))
+            CircuitEnv.storeFrameAsSubcircuit(componentName, flattenNodes(self.inp + self.out))
 
             # Restore the previous circuit environment
-            NODE_GRAPH = prevNodeGraph
-            COMPONENTS = prevComponents
-            TYPE_COUNT = prevTypeCount
-            GROUND = prevGround
+            CircuitEnv.popFrame()
             for num, node in zip(prevNodeNums, flatten(self.inp + self.out)):
                 node.nodeNum = num
 
@@ -163,17 +202,3 @@ class CustomComponent(Component):
 # primitive components
 # allow imported subcircuits
 # Add compilation -> netlist file
-
-def connectedComponents(graph):
-    def explore(node, net):
-        if not node in netlist.keys():
-            netlist[node] = net
-            for nextNode in graph[node]:
-                explore(nextNode, net)
-    netlist = {}
-    net = 0
-    for node in sorted(graph.keys()):
-        if net in netlist.values():
-            net += 1
-        explore(node, net)
-    return netlist
