@@ -8,6 +8,9 @@ class Comparator(CustomComponent):
         componentName = 'comparator' + str(bits) + 'bits'
         super().__init__(inp, out, componentName)
 
+    def build(self):
+        self.inp >> self.out
+
 class OddEvenMerger(CustomComponent):
     def __init__(self, n, bits):
         self.n = n

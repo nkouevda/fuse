@@ -6,6 +6,7 @@ TYPE_COUNT = defaultdict(int)
 COMPONENTS = []
 
 SUBCIRCUITS = {}
+IMPORTED = []
 NODE_TYPE = '_NODE'
 
 class Connectable():
@@ -124,14 +125,18 @@ class CustomComponent(Component):
             prevNodeGraph = NODE_GRAPH
             prevComponents = COMPONENTS
             prevTypeCount = TYPE_COUNT
+            prevNodeNums = flattenNodes(self.inp + self.out)
+            for i, node in enumerate(flatten(self.inp + self.out)):
+                node.nodeNum = i + 1
 
             NODE_GRAPH = {}
             COMPONENTS = []
             TYPE_COUNT = defaultdict(int)
 
-            for node in [GROUND.nodeNum] + flattenNodes(self.inp + self.out):
+            numIO = len(flatten(self.inp + self.out))
+            for node in range(numIO + 1):
                 NODE_GRAPH[node] = set()
-                TYPE_COUNT[NODE_TYPE] = max(TYPE_COUNT[NODE_TYPE], node)
+            TYPE_COUNT[NODE_TYPE] = numIO + 1
 
             SUBCIRCUITS[componentName] = (NODE_GRAPH, COMPONENTS, flattenNodes(self.inp + self.out))
             self.build()
@@ -139,9 +144,16 @@ class CustomComponent(Component):
             NODE_GRAPH = prevNodeGraph
             COMPONENTS = prevComponents
             TYPE_COUNT = prevTypeCount
+            for num, node in zip(prevNodeNums, flatten(self.inp + self.out)):
+                node.nodeNum = num
 
     def build(self):
         pass
+
+# STILL TODO:
+# primitive components
+# allow imported subcircuits
+# Add compilation -> netlist file
 
 def connectedComponents(graph):
     def explore(node, net):
