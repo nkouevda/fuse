@@ -1,14 +1,14 @@
 from fuse import *
-import pprint
 
 class Comparator(CustomComponent):
     def __init__(self, bits):
         inp = [Bus(bits), Bus(bits)]
         out = [Bus(bits), Bus(bits)]
+        self.bits = bits
         super().__init__(inp, out, 'comparator' + str(bits))
 
     def build(self):
-        self.inp >> self.out
+        self.inp >> [[Resistor(1000) for _ in range(self.bits)], [Resistor(1000) for _ in range(self.bits)]] >> self.out
 
 class OddEvenMerger(CustomComponent):
     def __init__(self, n, bits):
@@ -49,8 +49,6 @@ class OddEvenMergeSort(AbstractComponent):
 
             [a, b] >> OddEvenMerger(n // 2, bits) >> self.out
 
-x = OddEvenMergeSort(4, 2)
+OddEvenMergeSort(8, 4)
 
-pp = pprint.PrettyPrinter()
-pp.pprint(vars(CircuitEnv))
-print(CircuitEnv.exportNetlist())
+print(CircuitEnv.compileSpiceNetlist('Sorter'))

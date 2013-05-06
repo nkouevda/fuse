@@ -1,3 +1,4 @@
+import sys
 from collections import defaultdict
 
 def singleton(cls):
@@ -15,10 +16,11 @@ class CircuitEnv():
         self.__frames.append(self.curFrame)
 
     def storeFrameAsSubcircuit(self, name, connections):
+        assert len(self.curFrame[2]) != 0, name.upper() + " is empty"
         self.__subcircuits[name.upper()] = (connections, self.curFrame)
 
-    def getSubcircuit(self, name):
-        return self.__subcircuits.get(name.upper())
+    def hasSubcircuit(self, name):
+        return name.upper() in self.__subcircuits
 
     def popFrame(self):
         self.curFrame = self.__frames[len(self.__frames) - 2]
@@ -78,10 +80,10 @@ class CircuitEnv():
 
             return AbstractComponent(inp, out)
 
-    def exportNetlist(self):
+    def frameSpiceNetlist(self, frame):
         def connectedComponents(graph):
             def explore(node, net):
-                if not node in netlist.keys():
+                if not node in netlist:
                     netlist[node] = net
                     for nextNode in graph[node]:
                         explore(nextNode, net)
@@ -93,8 +95,8 @@ class CircuitEnv():
                 explore(node, net)
             return netlist
 
-        nodeGraph = self.curFrame[0]
-        components = self.curFrame[2]
+        nodeGraph = frame[0]
+        components = frame[2]
         netlists = connectedComponents(nodeGraph)
         netlistString = ''
         for component in components:
@@ -104,7 +106,21 @@ class CircuitEnv():
 
             netlistString += ' '.join([name] + pins + attrs) + '\n'
 
-        return netlistString
+        return netlistString, netlists
+
+    def compileSpiceNetlist(self, name):
+        out = name + '\n'
+        globalNetlist, nodeNetlists = self.frameSpiceNetlist(self.curFrame)
+        out += globalNetlist
+        for name, subcircuit in self.__subcircuits.items():
+            subcircuitNetlist, nodeNetlists = self.frameSpiceNetlist(subcircuit[1])
+            pins = [str(nodeNetlists[node]) for node in subcircuit[0]]
+            out += '.SUBCKT ' + ' '.join([name] + pins) + '\n'
+            out += subcircuitNetlist
+            out += '.ENDS\n'
+
+        out += '.end'
+        return out
 
 class Connectable():
     def __rshift__(self, other):
@@ -112,7 +128,6 @@ class Connectable():
 
     def __rrshift__(self, other):
         return CircuitEnv.connect(other, self)
-
 
 class Node(Connectable):
     def __init__(self):
@@ -172,10 +187,14 @@ class Component(AbstractComponent):
         connections = flattenNodes(connections) or flattenNodes(self.inp + self.out)
         self.name = CircuitEnv.newComponent(name, connections, attrs)
 
+class Resistor(Component):
+    def __init__(self, resistance, name = ''):
+        super().__init__([Node()], [Node()], 'r' + name, [resistance])
+
 class CustomComponent(Component):
     def __init__(self, inp, out, componentName):
         super().__init__(inp, out, 'x', [componentName])
-        if not CircuitEnv.getSubcircuit(componentName):
+        if not CircuitEnv.hasSubcircuit(componentName):
 
             # Store the current circuit environment
             prevNodeNums = flattenNodes(self.inp + self.out)
