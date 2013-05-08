@@ -1,4 +1,4 @@
-from .core import Component, Node
+from fuse.core import Component, Node
 
 class Resistor(Component):
     def __init__(self, resistance, name = ''):
