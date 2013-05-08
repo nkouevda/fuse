@@ -1,4 +1,3 @@
-import sys
 from collections import defaultdict
 
 def singleton(cls):
@@ -12,6 +11,7 @@ class CircuitEnv():
         self.newFrame()
 
     def newFrame(self):
+        # Frame = nodeGraph, componentTypeCount, components, nextNodeNum,
         self.curFrame = [{0: set()}, defaultdict(int), [], 1]
         self.__frames.append(self.curFrame)
 
@@ -115,6 +115,8 @@ class CircuitEnv():
         for name, subcircuit in self.__subcircuits.items():
             subcircuitNetlist, nodeNetlists = self.frameSpiceNetlist(subcircuit[1])
             pins = [str(nodeNetlists[node]) for node in subcircuit[0]]
+            assert len(pins) == len(set(pins)), \
+                "Component " + name + " has pins connected to the same netlist"
             out += '.SUBCKT ' + ' '.join([name] + pins) + '\n'
             out += subcircuitNetlist
             out += '.ENDS\n'
@@ -141,27 +143,27 @@ class Bundle(list, Connectable):
     # Make sure Bundles are returned from interactions w/ lists,
     # So the Connectable connections syntax may still be used
     def copy(self):
-        return Bundle(super().copy())
+        return Bundle(list.copy(self))
 
     def __mul__(self, other):
-        return Bundle(super().__mul__(other))
+        return Bundle(list.__mul__(self, other))
 
     def __rmul__(self, other):
-        return Bundle(super().__rmul__(other))
+        return Bundle(list.__rmul__(self, other))
 
     def __add__(self, other):
-        return Bundle(super().__add__(other))
+        return Bundle(list.__add__(self, other))
 
     def __radd__(self, other):
-        return Bundle(super().__add__(other))
+        return Bundle(list.__add__(self, other))
 
     def __getitem__(self, other):
-        x = super().__getitem__(other)
+        x = list.__getitem__(self, other)
         return Bundle(x) if isinstance(x, list) else x
 
 class Bus(Bundle):
     def __init__(self, num):
-        super().__init__([Node() for _ in range(num)])
+        Bundle.__init__(self, [Node() for _ in range(num)])
 
 class AbstractComponent(Connectable):
     # Try having base component __init__ to set self.inp and self.out so inp() and out() must be used to access?
@@ -183,41 +185,44 @@ def flatten(S):
 
 class Component(AbstractComponent):
     def __init__(self, inp, out, name, attrs, connections=None):
-        super().__init__(inp, out)
+        AbstractComponent.__init__(self, inp, out)
         connections = flattenNodes(connections) or flattenNodes(self.inp + self.out)
         self.name = CircuitEnv.newComponent(name, connections, attrs)
 
-class Resistor(Component):
-    def __init__(self, resistance, name = ''):
-        super().__init__([Node()], [Node()], 'r' + name, [resistance])
-
 class CustomComponent(Component):
-    def __init__(self, inp, out, componentName):
-        super().__init__(inp, out, 'x', [componentName])
-        if not CircuitEnv.hasSubcircuit(componentName):
-
-            # Store the current circuit environment
-            prevNodeNums = flattenNodes(self.inp + self.out)
-
-            # Enter a new subcircuit environment for all new nodes,
-            # components, and connections to be built in
-            CircuitEnv.newFrame()
-            for node in flatten(self.inp + self.out):
-                node.nodeNum = Node().nodeNum
-
-            # Build the subcircuit and store it
+    def __init__(self, inp, out, componentName, explode=False):
+        # If explode is False, a subcircuit is used for this component,
+        # Otherwise it simply uses the connections as usual.
+        if explode:
+            AbstractComponent.__init__(self, inp, out)
             self.build()
-            CircuitEnv.storeFrameAsSubcircuit(componentName, flattenNodes(self.inp + self.out))
+        else:
+            Component.__init__(self, inp, out, 'x', [componentName])
+            if not CircuitEnv.hasSubcircuit(componentName):
 
-            # Restore the previous circuit environment
-            CircuitEnv.popFrame()
-            for num, node in zip(prevNodeNums, flatten(self.inp + self.out)):
-                node.nodeNum = num
+                # Store the current circuit environment
+                prevNodeNums = flattenNodes(self.inp + self.out)
+
+                # Enter a new subcircuit environment for all new nodes,
+                # components, and connections to be built in
+                CircuitEnv.newFrame()
+                for node in flatten(self.inp + self.out):
+                    node.nodeNum = Node().nodeNum
+
+                # Build the subcircuit and store it
+                self.build()
+                CircuitEnv.storeFrameAsSubcircuit(componentName, flattenNodes(self.inp + self.out))
+
+                # Restore the previous circuit environment
+                CircuitEnv.popFrame()
+                for num, node in zip(prevNodeNums, flatten(self.inp + self.out)):
+                    node.nodeNum = num
 
     def build(self):
         pass
 
-# STILL TODO:
-# primitive components
-# allow imported subcircuits
-# Add compilation -> netlist file
+        # STILL TODO:
+        # primitive components
+        # models
+        # allow imported subcircuits?
+        # node probing + transient analysis
