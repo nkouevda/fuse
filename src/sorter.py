@@ -53,4 +53,8 @@ class OddEvenMergeSort(CustomComponent):
 
 OddEvenMergeSort(8)
 
+a, b = Inductor(100), Inductor(15)
+Inductor(4) >> Inductor(5)
+CoupleInductors(a, b, 10)
+
 print(CircuitEnv.compileSpiceNetlist('Sorter'))
