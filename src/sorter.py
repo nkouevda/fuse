@@ -1,3 +1,5 @@
+import random
+
 from fuse.core import *
 from fuse.primitives import *
 
@@ -14,7 +16,7 @@ class OddEvenMerger(CustomComponent):
         self.n = n
         inp = [[Node() for _ in range(n)], [Node() for _ in range(n)]]
         out = [Node() for _ in range(2 * n)]
-        componentName = 'merge' + str(n) + 'nums'
+        componentName = 'merge' + str(n * 2)
         super().__init__(inp, out, componentName, explode=explode)
 
     def build(self):
@@ -39,7 +41,7 @@ class OddEvenMergeSort(CustomComponent):
         self.n = n
         inp = [Node() for _ in range(n)]
         out = [Node() for _ in range(n)]
-        super().__init__(inp, out, "MergeSort" + str(n), explode=explode)
+        super().__init__(inp, out, "Sort" + str(n), explode=explode)
 
     def build(self):
         n, inp, out = self.n, self.inp, self.out
@@ -51,10 +53,11 @@ class OddEvenMergeSort(CustomComponent):
 
             [a, b] >> OddEvenMerger(n // 2) >> out
 
-OddEvenMergeSort(8)
+num = 32
+[Ground() for i in range(num)] >> Bundle([DCVoltageSource(random.random()) for _ in range(num)]) >> OddEvenMergeSort(num) >> [Resistor(100) for i in range(num)] >> [Ground() for i in range(num)]
 
-a, b = Inductor(100), Inductor(15)
-Inductor(4) >> Inductor(5)
-CoupleInductors(a, b, 10)
-
-print(CircuitEnv.compileSpiceNetlist('Sorter'))
+spiceNetlist = CircuitEnv.compileSpiceNetlist('Sorter')
+print(spiceNetlist)
+f = open('/Users/tomerk/Desktop/sorter.cir', 'w')
+f.write(spiceNetlist)
+f.close()

@@ -121,7 +121,7 @@ class CircuitEnv():
             out += subcircuitNetlist
             out += '.ENDS\n'
 
-        out += '.end'
+        out += '.op\n.end'
         return out
 
 class Connectable():
@@ -197,7 +197,7 @@ class CustomComponent(Component):
             AbstractComponent.__init__(self, inp, out)
             self.build()
         else:
-            Component.__init__(self, inp, out, 'x', [componentName])
+            Component.__init__(self, inp, out, 'x' + componentName, [componentName])
             if not CircuitEnv.hasSubcircuit(componentName):
 
                 # Store the current circuit environment
