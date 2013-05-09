@@ -155,7 +155,7 @@ class Bundle(list, Connectable):
         return Bundle(list.__add__(self, other))
 
     def __radd__(self, other):
-        return Bundle(list.__add__(self, other))
+        return Bundle(list.__add__(other, self))
 
     def __getitem__(self, other):
         x = list.__getitem__(self, other)
@@ -166,7 +166,6 @@ class Bus(Bundle):
         Bundle.__init__(self, [Node() for _ in range(num)])
 
 class AbstractComponent(Connectable):
-    # Try having base component __init__ to set self.inp and self.out so inp() and out() must be used to access?
     def __init__(self, inp, out):
         self.inp = Bundle(inp)
         self.out = Bundle(out)
@@ -188,6 +187,13 @@ class Component(AbstractComponent):
         AbstractComponent.__init__(self, inp, out)
         connections = flattenNodes(connections) or flattenNodes(self.inp + self.out)
         self.name = CircuitEnv.newComponent(name, connections, attrs)
+
+class Model(Component):
+    def __init__(self, type, attrs=dict()):
+        mname = '.model ' + type + 'model'
+        attrsStringList = [str(i) + '=' + str(j) for i, j in attrs.items()]
+        Component.__init__(self, [], [], mname, [type] + attrsStringList)
+        self.mname = self.name[7:] # Remove the '.model ' from the name
 
 class CustomComponent(Component):
     def __init__(self, inp, out, componentName, explode=False):
@@ -223,6 +229,6 @@ class CustomComponent(Component):
 
         # STILL TODO:
         # primitive components
-        # models
         # allow imported subcircuits?
-        # node probing + transient analysis
+        # More node probing + transient analysis features?
+        # Create the examples for our project

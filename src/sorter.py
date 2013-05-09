@@ -9,7 +9,11 @@ class Comparator(CustomComponent):
         super().__init__(inp, out, 'comparator')
 
     def build(self):
-        self.inp >> [Resistor(1000), Resistor(1000)] >> self.out
+        switchModel = SwitchModel()
+        [self.inp[0]] + self.inp >> Switch(switchModel) >> self.out[0]
+        [self.inp[0]] + self.inp[::-1] >> Switch(switchModel) >> self.out[1]
+        [self.inp[1]] + self.inp >> Switch(switchModel) >> self.out[1]
+        [self.inp[1]] + self.inp[::-1] >> Switch(switchModel) >> self.out[0]
 
 class OddEvenMerger(CustomComponent):
     def __init__(self, n, explode=False):
@@ -53,8 +57,13 @@ class OddEvenMergeSort(CustomComponent):
 
             [a, b] >> OddEvenMerger(n // 2) >> out
 
-num = 32
-[Ground() for i in range(num)] >> Bundle([DCVoltageSource(random.random()) for _ in range(num)]) >> OddEvenMergeSort(num) >> [Resistor(100) for i in range(num)] >> [Ground() for i in range(num)]
+#num = 2
+#[Ground() for i in range(num)] >> Bundle([DCVoltageSource(random.random()) for _ in range(num)]) >> OddEvenMergeSort(num) >> [Resistor('10k') for i in range(num)] >> [Ground() for i in range(num)]
+
+[Ground(), Ground()] >> Bundle([DCVoltageSource(random.random()) for _ in range(2)]) >> OddEvenMergeSort(2) >> Bundle([Resistor(1000), Resistor(1000)]) >> [Ground(), Ground()]
+[Ground(), Ground()] >> Bundle([DCVoltageSource(random.random()) for _ in range(2)]) >> OddEvenMergeSort(2) >> Bundle([Resistor(1000), Resistor(1000)]) >> [Ground(), Ground()]
+[Ground(), Ground()] >> Bundle([DCVoltageSource(random.random()) for _ in range(2)]) >> OddEvenMergeSort(2) >> Bundle([Resistor(1000), Resistor(1000)]) >> [Ground(), Ground()]
+[Ground(), Ground()] >> Bundle([DCVoltageSource(random.random()) for _ in range(2)]) >> OddEvenMergeSort(2) >> Bundle([Resistor(1000), Resistor(1000)]) >> [Ground(), Ground()]
 
 spiceNetlist = CircuitEnv.compileSpiceNetlist('Sorter')
 print(spiceNetlist)
