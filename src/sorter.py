@@ -28,11 +28,11 @@ class OddEvenMerger(CustomComponent):
         if n == 1:
             inp >> Comparator() >> out
         else:
-            odd = inp[0][1::2], inp[1][1::2]
+            odd = inp[0][::2], inp[1][::2]
             odd_merger = odd >> OddEvenMerger(n // 2, explode=True)
             odd_merger.out[0] >> out[0]
 
-            even = inp[0][::2], inp[1][::2]
+            even = inp[0][1::2], inp[1][1::2]
             even_merger = even >> OddEvenMerger(n // 2, explode=True)
             even_merger.out[n - 1] >> out[2 * n - 1]
 
@@ -57,10 +57,10 @@ class OddEvenMergeSort(CustomComponent):
 
             [a, b] >> OddEvenMerger(n // 2) >> out
 
-num = 4
+num = 16
 #[Ground() for i in range(num)] >> Bundle([DCVoltageSource(random.random()) for _ in range(num)]) >> OddEvenMergeSort(num) >> [Resistor('10k') for i in range(num)] >> [Ground() for i in range(num)]
 
-for i in range(4):
+for i in range(1):
     [Ground() >> DCVoltageSource(random.random()) for _ in range(num)] >> OddEvenMergeSort(num) >> [Resistor(1000) >> Ground() for i in range(num)]
 
 spiceNetlist = CircuitEnv.compileSpiceNetlist('Sorter')
