@@ -58,7 +58,6 @@ class OddEvenMergeSort(CustomComponent):
             [a, b] >> OddEvenMerger(n // 2) >> out
 
 num = 16
-#[Ground() for i in range(num)] >> Bundle([DCVoltageSource(random.random()) for _ in range(num)]) >> OddEvenMergeSort(num) >> [Resistor('10k') for i in range(num)] >> [Ground() for i in range(num)]
 
 for i in range(1):
     [Ground() >> DCVoltageSource(random.random()) for _ in range(num)] >> OddEvenMergeSort(num) >> [Resistor(1000) >> Ground() for i in range(num)]
