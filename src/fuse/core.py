@@ -201,6 +201,3 @@ class CustomComponent(Component):
                 CircuitEnv.popFrame()
                 for num, node in zip(prevNodeNums, flatten(self.inp + self.out)):
                     node.nodeNum = num
-
-    def build(self):
-        pass
