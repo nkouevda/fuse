@@ -20,10 +20,11 @@ class ChainedFilters(AbstractComponent):
         inp >> self.out
 
 
-filter_list = [LowPassFilter(x) for x in [450] * 10]
+filter_list = [LowPassFilter(x) for x in [450] * 5]
 Ground() >> ACVoltageSource(1) >> ChainedFilters(filter_list) >> Resistor("1k") >> Ground()
 
 spiceNetlist = CircuitEnv.compileSpiceNetlist('chainedLPFs')
+spiceNetlist = spiceNetlist[:-4] + ".AC DEC 10 10 100k\n" ".plot AC Vdb(1) Vdb(2) Vdb(3) Vdb(4) Vdb(5) Vdb(6)\n" + spiceNetlist[-4:]
 print(spiceNetlist)
 f = open('/Users/tomerk/Desktop/chainedLowPassFilters.cir', 'w')
 f.write(spiceNetlist)
