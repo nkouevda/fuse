@@ -16,7 +16,7 @@ class ChainedFilters(AbstractComponent):
         super().__init__([Node()], [Node()])
         inp = self.inp
         for filter_component in filter_list:
-            inp = inp >> filter_component
+            inp >>= filter_component
         inp >> self.out
 
 

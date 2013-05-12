@@ -5,7 +5,7 @@ from fuse.primitives import *
 
 class Comparator(CustomComponent):
     def __init__(self):
-        inp, out = [Node(), Node()], [Node(), Node()]
+        inp, out = Bus(2), Bus(2)
         super().__init__(inp, out, 'comparator')
 
     def build(self):
@@ -19,8 +19,8 @@ class Comparator(CustomComponent):
 class OddEvenMerger(CustomComponent):
     def __init__(self, n, explode=False):
         self.n = n
-        inp = [[Node() for _ in range(n)], [Node() for _ in range(n)]]
-        out = [Node() for _ in range(2 * n)]
+        inp = [Bus(n), Bus(n)]
+        out = Bus(2 * n)
         componentName = 'merge' + str(n * 2)
         super().__init__(inp, out, componentName, explode=explode)
 
@@ -45,8 +45,8 @@ class OddEvenMerger(CustomComponent):
 class OddEvenMergeSort(CustomComponent):
     def __init__(self, n, explode=False):
         self.n = n
-        inp = [Node() for _ in range(n)]
-        out = [Node() for _ in range(n)]
+        inp = Bus(n)
+        out = Bus(n)
         super().__init__(inp, out, "Sort" + str(n), explode=explode)
 
     def build(self):

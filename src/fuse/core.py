@@ -139,36 +139,14 @@ class Ground(Node):
     def __init__(self):
         self.nodeNum = 0
 
-class Bundle(list, Connectable):
-    # Make sure Bundles are returned from interactions w/ lists,
-    # So the Connectable connections syntax may still be used
-    def copy(self):
-        return Bundle(list.copy(self))
-
-    def __mul__(self, other):
-        return Bundle(list.__mul__(self, other))
-
-    def __rmul__(self, other):
-        return Bundle(list.__rmul__(self, other))
-
-    def __add__(self, other):
-        return Bundle(list.__add__(self, other))
-
-    def __radd__(self, other):
-        return Bundle(list.__add__(other, self))
-
-    def __getitem__(self, other):
-        x = list.__getitem__(self, other)
-        return Bundle(x) if isinstance(x, list) else x
-
-class Bus(Bundle):
+class Bus(list, Connectable):
     def __init__(self, num):
-        Bundle.__init__(self, [Node() for _ in range(num)])
+        list.__init__(self, [Node() for _ in range(num)])
 
 class AbstractComponent(Connectable):
     def __init__(self, inp, out):
-        self.inp = Bundle(inp)
-        self.out = Bundle(out)
+        self.inp = inp
+        self.out = out
 
 def flattenNodes(S):
     return [node.nodeNum for node in flatten(S)]
@@ -226,9 +204,3 @@ class CustomComponent(Component):
 
     def build(self):
         pass
-
-        # STILL TODO:
-        # primitive components
-        # allow imported subcircuits?
-        # More node probing + transient analysis features?
-        # Create the examples for our project

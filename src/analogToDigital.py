@@ -34,16 +34,14 @@ class GreaterThan(CustomComponent):
 class ThermometerEncoder(CustomComponent):
     # Create a thermometer analog -> digital encoder in the range zero_val to max_val
     def __init__(self, bits):
-        inp = [Node()]
-        out = Bus(bits)
-        self.bits = bits
+        inp, out, self.bits = [Node()], Bus(bits), bits
         super().__init__(inp, out, "ThermometerEncode" + str(bits))
 
     def build(self):
         cur_node = Ground() >> DCVoltageSource(5)
         for i in range(self.bits):
             self.inp + [cur_node] >> GreaterThan() >> self.out[self.bits - i - 1]
-            cur_node = cur_node >> Resistor(1000)
+            cur_node >>= Resistor(1000)
 
         cur_node >> Ground()
 
