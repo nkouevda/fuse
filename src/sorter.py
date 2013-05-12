@@ -15,6 +15,7 @@ class Comparator(CustomComponent):
         [self.inp[1]] + self.inp >> Switch(switchModel) >> self.out[1]
         [self.inp[1]] + self.inp[::-1] >> Switch(switchModel) >> self.out[0]
 
+
 class OddEvenMerger(CustomComponent):
     def __init__(self, n, explode=False):
         self.n = n
@@ -40,6 +41,7 @@ class OddEvenMerger(CustomComponent):
                 ([odd_merger.out[i + 1], even_merger.out[i]]
                  >> Comparator() >> [out[2 * i + 1], out[2 * i + 2]])
 
+
 class OddEvenMergeSort(CustomComponent):
     def __init__(self, n, explode=False):
         self.n = n
@@ -57,10 +59,9 @@ class OddEvenMergeSort(CustomComponent):
 
             [a, b] >> OddEvenMerger(n // 2) >> out
 
-num = 16
 
-for i in range(1):
-    [Ground() >> DCVoltageSource(random.random()) for _ in range(num)] >> OddEvenMergeSort(num) >> [Resistor(1000) >> Ground() for i in range(num)]
+num = 16
+[Ground() >> DCVoltageSource(random.random()) for _ in range(num)] >> OddEvenMergeSort(num) >> [Resistor(1000) >> Ground() for i in range(num)]
 
 spiceNetlist = CircuitEnv.compileSpiceNetlist('Sorter')
 print(spiceNetlist)

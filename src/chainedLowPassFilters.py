@@ -1,8 +1,5 @@
-import random
-
 from fuse.core import *
 from fuse.primitives import *
-
 
 class LowPassFilter(CustomComponent):
     def __init__(self, cutoff):
