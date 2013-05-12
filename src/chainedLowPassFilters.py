@@ -21,7 +21,7 @@ class ChainedFilters(AbstractComponent):
 
 
 filter_list = [LowPassFilter(x) for x in [450] * 10]
-Ground() >> DCVoltageSource(1) >> ChainedFilters(filter_list) >> Resistor("1k")
+Ground() >> ACVoltageSource(1) >> ChainedFilters(filter_list) >> Resistor("1k") >> Ground()
 
 spiceNetlist = CircuitEnv.compileSpiceNetlist('chainedLPFs')
 print(spiceNetlist)
