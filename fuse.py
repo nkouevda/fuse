@@ -147,9 +147,32 @@ class CircuitEnv():
 
 # Core
 
-# The base class for Fuse objects.
-# Implements the ability to connect to other Connectable objects with >> syntax.
+def flatten(iterable):
+    """Return the flattened version of the given iterable."""
+
+    out = []
+
+    for val in iterable if iterable else []:
+        if hasattr(val, '__iter__') and not isinstance(val, str):
+            out.extend(flatten(val))
+        else:
+            out.append(val)
+
+    return out
+
+
+def flatten_node_nums(nodes):
+    """Return the node numbers of the flattened version of the given nodes."""
+
+    return [node.node_num for node in flatten(nodes)]
+
+
 class Connectable():
+    """The base class for fuse objects.
+
+    Implement the ability to connect to other Connectable objects via >> or <<.
+    """
+
     def __rshift__(self, other):
         return CircuitEnv.connect(self, other)
 
@@ -163,57 +186,54 @@ class Connectable():
         return CircuitEnv.connect(self, other)
 
 
-# The node class for Fuse objects.
-# A connection point to a netlist within the circuit.
 class Node(Connectable):
+    """The node class for fuse objects.
+
+    A connection points to a netlist within the circuit.
+    """
+
     def __init__(self):
         self.node_num = CircuitEnv.new_node()
 
 
-# The ground class for Fuse objects.
-# Represents the zero-voltage section of circuit by assigning node_num 0.
 class Ground(Node):
+    """The ground class for fuse objects.
+
+    Represent the zero-voltage section of a circuit; node_num is always 0.
+    """
+
     def __init__(self):
         self.node_num = 0
 
 
-# The bus class for Fuse objects.
-# Represents a sequence of Node objects.
-# Implemented as a list so that bus objects are iterable.
 class Bus(list, Connectable):
+    """The bus class for fuse objects.
+
+    Represent a sequence of nodes; extends list in order to allow iteration.
+    """
+
     def __init__(self, num):
         list.__init__(self, [Node() for _ in range(num)])
 
 
-# The abstract component class for Fuse objects.
-# Implements input with self.inp and output with self.out
 class AbstractComponent(Connectable):
+    """The abstract component class for fuse objects.
+
+    Use self.inp and self.out for input and output, respectively.
+    """
+
     def __init__(self, inp, out):
         self.inp = inp
         self.out = out
 
-# Flattens an iterable into one list.
-def flatten(iterable):
-    out = []
 
-    for val in iterable if iterable else []:
-        if hasattr(val, '__iter__') and not isinstance(val, str):
-            out.extend(flatten(val))
-        else:
-            out.append(val)
-
-    return out
-
-
-# Flattens the node numbers of the given iterable of nodes into one list.
-def flatten_node_nums(nodes):
-    return [node.node_num for node in flatten(nodes)]
-
-
-# The component class for Fuse objects. 
-# The connections parameter allows interaction with the SPICE netlist.
-# Constructing a component will add the component to the current frame in CircuitEnv.
 class Component(AbstractComponent):
+    """The component class for fuse objects.
+
+    The connections parameter allows interaction with the SPICE netlist.
+    Constructing a component will add the component to the current frame.
+    """
+
     def __init__(self, inp, out, name, attrs, connections=None):
         AbstractComponent.__init__(self, inp, out)
         connections = (
@@ -222,9 +242,13 @@ class Component(AbstractComponent):
         self.name = CircuitEnv.new_component(name, connections, attrs)
 
 
-# The model class for Fuse objects.
-# Allows for the use of specific models of various components for SPICE compatibility.
 class Model(Component):
+    """The model class for fuse objects.
+
+    Allow for the use of specific models of various components, for SPICE
+    compatibility.
+    """
+
     def __init__(self, component_type, attrs=dict()):
         mname = '.model ' + component_type + 'model'
         attrsStringList = [str(i) + '=' + str(j) for i, j in attrs.items()]
@@ -235,9 +259,12 @@ class Model(Component):
         self.mname = self.name[7:]
 
 
-# The custom component class for Fuse objects.
-# Allows for impmlementation of subcircuits as a single Fuse component.
 class CustomComponent(Component):
+    """The custom component class for fuse objects.
+
+    Allow for the impmlementation of subcircuits as single fuse components.
+    """
+
     def __init__(self, inp, out, componentName, explode=False):
         # Do not use a subcircuit for this component if explode is True
         if explode:
