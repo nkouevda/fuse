@@ -147,6 +147,8 @@ class CircuitEnv():
 
 # Core
 
+# The base class for Fuse objects.
+# Implements the ability to connect to other Connectable objects with >> syntax.
 class Connectable():
     def __rshift__(self, other):
         return CircuitEnv.connect(self, other)
@@ -154,28 +156,43 @@ class Connectable():
     def __rrshift__(self, other):
         return CircuitEnv.connect(other, self)
 
+    def __lshift__(self, other):
+        return CircuitEnv.connect(other, self)
 
+    def __rlshift__(self, other):
+        return CircuitEnv.connect(self, other)
+
+
+# The node class for Fuse objects.
+# A connection point to a netlist within the circuit.
 class Node(Connectable):
     def __init__(self):
         self.node_num = CircuitEnv.new_node()
 
 
+# The ground class for Fuse objects.
+# Represents the zero-voltage section of circuit by assigning node_num 0.
 class Ground(Node):
     def __init__(self):
         self.node_num = 0
 
 
+# The bus class for Fuse objects.
+# Represents a sequence of Node objects.
+# Implemented as a list so that bus objects are iterable.
 class Bus(list, Connectable):
     def __init__(self, num):
         list.__init__(self, [Node() for _ in range(num)])
 
 
+# The abstract component class for Fuse objects.
+# Implements input with self.inp and output with self.out
 class AbstractComponent(Connectable):
     def __init__(self, inp, out):
         self.inp = inp
         self.out = out
 
-
+# Flattens an iterable into one list.
 def flatten(iterable):
     out = []
 
@@ -188,10 +205,14 @@ def flatten(iterable):
     return out
 
 
+# Flattens the node numbers of the given iterable of nodes into one list.
 def flatten_node_nums(nodes):
     return [node.node_num for node in flatten(nodes)]
 
 
+# The component class for Fuse objects. 
+# The connections parameter allows interaction with the SPICE netlist.
+# Constructing a component will add the component to the current frame in CircuitEnv.
 class Component(AbstractComponent):
     def __init__(self, inp, out, name, attrs, connections=None):
         AbstractComponent.__init__(self, inp, out)
@@ -201,6 +222,8 @@ class Component(AbstractComponent):
         self.name = CircuitEnv.new_component(name, connections, attrs)
 
 
+# The model class for Fuse objects.
+# Allows for the use of specific models of various components for SPICE compatibility.
 class Model(Component):
     def __init__(self, component_type, attrs=dict()):
         mname = '.model ' + component_type + 'model'
@@ -212,6 +235,8 @@ class Model(Component):
         self.mname = self.name[7:]
 
 
+# The custom component class for Fuse objects.
+# Allows for impmlementation of subcircuits as a single Fuse component.
 class CustomComponent(Component):
     def __init__(self, inp, out, componentName, explode=False):
         # Do not use a subcircuit for this component if explode is True
@@ -503,7 +528,7 @@ class JFETModel(Model):
 
 # M
 class MOSFET(Component):
-    """Metal–oxide–semiconductor field-effect transistor.
+    """Metal-oxide- semiconductor field-effect transistor.
 
     Input: the drain node, the gate node.
     Output: the source node, the bulk node.
