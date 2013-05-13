@@ -172,10 +172,6 @@ class AbstractComponent(Connectable):
         self.out = out
 
 
-def flatten_nodes(nodes):
-    return [node.node_num for node in flatten(nodes)]
-
-
 def flatten(iterable):
     out = []
 
@@ -188,11 +184,16 @@ def flatten(iterable):
     return out
 
 
+def flatten_node_nums(nodes):
+    return [node.node_num for node in flatten(nodes)]
+
+
 class Component(AbstractComponent):
     def __init__(self, inp, out, name, attrs, connections=None):
         AbstractComponent.__init__(self, inp, out)
         connections = (
-            flatten_nodes(connections) or flatten_nodes(self.inp + self.out))
+            flatten_node_nums(connections)
+            or flatten_node_nums(self.inp + self.out))
         self.name = CircuitEnv.new_component(name, connections, attrs)
 
 
@@ -219,7 +220,7 @@ class CustomComponent(Component):
 
             if not CircuitEnv.has_subcircuit(componentName):
                 # Store the current circuit environment
-                prev_node_nums = flatten_nodes(self.inp + self.out)
+                prev_nums = flatten_node_nums(self.inp + self.out)
 
                 # Enter a new subcircuit environment for all new nodes,
                 # components, and connections to be built in
@@ -231,12 +232,10 @@ class CustomComponent(Component):
                 # Build the subcircuit and store it
                 self.build()
                 CircuitEnv.store_frame_as_subcircuit(
-                    componentName, flatten_nodes(self.inp + self.out))
+                    componentName, flatten_node_nums(self.inp + self.out))
 
                 # Restore the previous circuit environment
                 CircuitEnv.pop_frame()
 
-                flattened = flatten(self.inp + self.out)
-
-                for num, node in zip(prev_node_nums, flattened):
+                for num, node in zip(prev_nums, flatten(self.inp + self.out)):
                     node.node_num = num

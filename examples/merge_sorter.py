@@ -15,7 +15,7 @@ from fuse.primitives import *
 
 class Comparator(CustomComponent):
     def __init__(self):
-        super().__init__(Bus(2), Bus(2), 'COMPARATOR')
+        super().__init__(Bus(2), Bus(2), 'CMP')
 
     def build(self):
         switchModel = SwitchModel()
@@ -30,7 +30,8 @@ class OddEvenMerger(CustomComponent):
     def __init__(self, n, explode=False):
         self.n = n
         super().__init__(
-            [Bus(n), Bus(n)], Bus(2 * n), 'MERGE' + str(n * 2), explode=explode)
+            [Bus(n), Bus(n)], Bus(2 * n), 'MERGE' + str(n * 2),
+            explode=explode)
 
     def build(self):
         n, inp, out = self.n, self.inp, self.out
@@ -75,7 +76,7 @@ def main():
     out = [Resistor(1000) >> Ground() for i in range(num)]
     inp >> OddEvenMergeSort(num) >> out
 
-    spice_netlist = CircuitEnv.compile_spice_netlist('SORTER')
+    spice_netlist = CircuitEnv.compile_spice_netlist('MergeSorter')
 
     print(spice_netlist)
 

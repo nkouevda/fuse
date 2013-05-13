@@ -40,10 +40,13 @@ def main():
     filters = ChainedFilters([LowPassFilter(x) for x in [450] * 5])
     Ground() >> ACVoltageSource(1) >> filters >> Resistor('1K') >> Ground()
 
-    spice_netlist = CircuitEnv.compile_spice_netlist('chainedLPFs')
+    spice_netlist = CircuitEnv.compile_spice_netlist('ChainedLPF')
+
+    # Add AC analysis
     spice_netlist = (
         spice_netlist[:-4] + '.AC DEC 10 10 100k\n'
-        + '.plot AC Vdb(1) Vdb(2) Vdb(3) Vdb(4) Vdb(5) Vdb(6)\n' + spice_netlist[-4:])
+        + '.plot AC Vdb(1) Vdb(2) Vdb(3) Vdb(4) Vdb(5) Vdb(6)\n'
+        + spice_netlist[-4:])
 
     print(spice_netlist)
 
