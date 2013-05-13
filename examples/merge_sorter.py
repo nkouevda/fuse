@@ -9,8 +9,7 @@ import sys
 sys.path.append(
     os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from fuse.core import *
-from fuse.primitives import *
+from fuse import *
 
 
 class Comparator(CustomComponent):
@@ -80,7 +79,7 @@ def main():
 
     print(spice_netlist)
 
-    with open('sorter.cir', 'w') as out_file:
+    with open('merge_sorter.cir', 'w') as out_file:
         out_file.write(spice_netlist)
 
 

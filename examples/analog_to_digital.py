@@ -13,8 +13,7 @@ import sys
 sys.path.append(
     os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from fuse.core import *
-from fuse.primitives import *
+from fuse import *
 
 
 class XOrGate(CustomComponent):

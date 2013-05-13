@@ -9,8 +9,7 @@ from math import pi as PI
 sys.path.append(
     os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from fuse.core import *
-from fuse.primitives import *
+from fuse import *
 
 
 class LowPassFilter(CustomComponent):
@@ -50,7 +49,7 @@ def main():
 
     print(spice_netlist)
 
-    with open('chainedLowPassFilters.cir', 'w') as out_file:
+    with open('chained_lpf.cir', 'w') as out_file:
         out_file.write(spice_netlist)
 
 
