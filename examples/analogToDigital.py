@@ -1,7 +1,20 @@
-# An analog -> digital converter circuit, based off:
-# http://www.allaboutcircuits.com/vol_4/chpt_13/4.html
+# Tomer Kaftan, Nikita Kouevda, Daniel Wong
+# 2013/05/12
+
+"""An analog -> digital converter circuit, based off
+http://www.allaboutcircuits.com/vol_4/chpt_13/4.html
+"""
+
+import os
+import sys
+
+# Add the location of the fuse source to the path before importing it
+sys.path.append(
+    os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
+
 from fuse.core import *
 from fuse.primitives import *
+
 
 class XOrGate(CustomComponent):
     def __init__(self):
@@ -11,8 +24,12 @@ class XOrGate(CustomComponent):
         On = Ground() >> DCVoltageSource(5)
         Off = Ground()
 
-        modelEither = SwitchModel(VT = 2.5) # Switch w/ voltage threshold of 2.5
-        modelNeither = SwitchModel(VT = -2.5) # Switch w/ voltage threshold of -2.5
+        # Switch w/ voltage threshold of 2.5
+        modelEither = SwitchModel(VT=2.5)
+
+        # Switch w/ voltage threshold of -2.5
+        modelNeither = SwitchModel(VT=-2.5)
+
         [On] + self.inp >> Switch(modelEither) >> self.out
         [On] + self.inp[::-1] >> Switch(modelEither) >> self.out
         ([Off] + self.inp >> Switch(modelNeither)).out + self.inp[::-1] >> Switch(modelNeither) >> self.out
@@ -66,21 +83,30 @@ class AnalogToDigital(CustomComponent):
 
             # Example of making use of python functions to intelligently act
             binary_array = [int(x) for x in reversed(bin(i + 1)[2:])]
+
             for j, k in enumerate(binary_array):
                 if k:
                     xor >> Diode(mod) >> self.out[j]
 
             prev_node = thermometerComponent.out[i]
 
-desiredNum = 2
-bits = 3
-voltage = 5 * desiredNum / ( 2 ** bits - 1)
-print("Voltage is: " + str(voltage))
 
-Ground() >> DCVoltageSource(voltage) >> AnalogToDigital(bits) >> [Resistor("1k") >> Ground() for _ in range(bits)]
+def main():
+    desired_num = 2
+    bits = 3
+    voltage = 5 * desired_num / (2 ** bits - 1)
 
-spiceNetlist = CircuitEnv.compileSpiceNetlist('AnalogToDigital')
-print(spiceNetlist)
-f = open('/Users/tomerk/Desktop/AnalogToDigital.cir', 'w')
-f.write(spiceNetlist)
-f.close()
+    print('Voltage is: ' + str(voltage))
+
+    Ground() >> DCVoltageSource(voltage) >> AnalogToDigital(bits) >> [Resistor('1K') >> Ground() for _ in range(bits)]
+
+    spice_netlist = CircuitEnv.compile_spice_netlist('AnalogToDigital')
+
+    print(spice_netlist)
+
+    with open('AnalogToDigital.cir', 'w') as out_file:
+        out_file.write(spice_netlist)
+
+
+if __name__ == '__main__':
+    main()
