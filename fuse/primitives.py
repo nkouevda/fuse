@@ -52,7 +52,7 @@ class CoupledInductors(Component):
 class Switch(Component):
     """Switch.
 
-    Input: the + terminal, the + voltage reference, and the - voltage reference.
+    Input: the + terminal, the + voltage reference, the - voltage reference.
     Output: the - terminal.
     """
 
@@ -140,7 +140,7 @@ class CurrentSource(Component):
 class VCVS(Component):
     """Voltage-controlled voltage source.
 
-    Input: the + terminal, the + voltage reference, and the - voltage reference.
+    Input: the + terminal, the + voltage reference, the - voltage reference.
     Output: the - terminal.
     """
 
@@ -172,7 +172,7 @@ class CCCS(Component):
 class VCCS(Component):
     """Voltage-controlled current source.
 
-    Input: the + terminal, the + voltage reference, and the - voltage reference.
+    Input: the + terminal, the + voltage reference, the - voltage reference.
     Output: the - terminal.
     """
 
@@ -202,9 +202,13 @@ class CCVS(Component):
 
 # D
 class Diode(Component):
-    ''' Input is the positive terminal,
-    Output is the negative terminal,
-    The reference current is the current through the input voltage source'''
+    """Diode.
+
+    Input: the + terminal.
+    Output: the - terminal.
+
+    The reference current is the current through the input voltage source.
+    """
 
     def __init__(self, model, name=''):
         Component.__init__(self, [Node()], [Node()], 'D' + name, [model.mname])
@@ -220,7 +224,7 @@ class DiodeModel(Model):
 class BJT(Component):
     """Bipolar junction transistor.
 
-    Input: the collector node and the base node.
+    Input: the collector node, the base node.
     Output: the emitter node.
     """
 
@@ -239,7 +243,7 @@ class BJTModel(Model):
 class JFET(Component):
     """Junction gate field-effect transistor.
 
-    Input: the drain node and the gate node.
+    Input: the drain node, the gate node.
     Output: the source node.
     """
 
@@ -258,13 +262,14 @@ class JFETModel(Model):
 class MOSFET(Component):
     """Metal–oxide–semiconductor field-effect transistor.
 
-    Input: the drain node and the gate node.
-    Output: the source node and the bulk node.
+    Input: the drain node, the gate node.
+    Output: the source node, the bulk node.
     """
 
     def __init__(self, model, name=''):
         Component.__init__(
-            self, [Node(), Node()], [Node(), Node()], 'M' + name, [model.mname])
+            self, [Node(), Node()], [Node(), Node()], 'M' + name,
+            [model.mname])
 
 
 # NMOS, PMOS
@@ -277,7 +282,7 @@ class MOSFETModel(Model):
 class MESFET(Component):
     """Metal semiconductor field effect transistor.
 
-    Input: the drain node and the gate node.
+    Input: the drain node, the gate node.
     Output: the source node.
 
     """
