@@ -1,5 +1,5 @@
 # Tomer Kaftan, Nikita Kouevda, Daniel Wong
-# 2013/05/12
+# 2013/05/15
 
 """An analog to digital converter circuit.
 
@@ -25,13 +25,14 @@ class XOrGate(CustomComponent):
         Off = Ground()
 
         # Switches with voltage thresholds of 2.5 and -2.5
-        modelEither = SwitchModel(VT=2.5)
-        modelNeither = SwitchModel(VT=-2.5)
+        model_either = SwitchModel(VT=2.5)
+        model_neither = SwitchModel(VT=-2.5)
 
-        [On] + self.inp >> Switch(modelEither) >> self.out
-        [On] + self.inp[::-1] >> Switch(modelEither) >> self.out
-        (([Off] + self.inp >> Switch(modelNeither)).out + self.inp[::-1]
-         >> Switch(modelNeither) >> self.out)
+        # XOR logic
+        [On] + self.inp >> Switch(model_either) >> self.out
+        [On] + self.inp[::-1] >> Switch(model_either) >> self.out
+        (([Off] + self.inp >> Switch(model_neither)).out + self.inp[::-1]
+         >> Switch(model_neither) >> self.out)
 
 
 class GreaterThan(CustomComponent):
@@ -49,7 +50,6 @@ class GreaterThan(CustomComponent):
 
 
 class ThermometerEncoder(CustomComponent):
-    # Create a thermometer analog to digital encoder
     def __init__(self, bits):
         inp, out, self.bits = [Node()], Bus(bits), bits
         super().__init__(inp, out, 'TE' + str(bits))
@@ -99,11 +99,13 @@ def main():
     bits = 3
     voltage = 5 * desired_num / (2 ** bits - 1)
 
+    # Indicate the voltage being used
     print('Voltage is: ' + str(voltage))
 
     (Ground() >> DCVoltageSource(voltage) >> AnalogToDigital(bits)
      >> [Resistor('1K') >> Ground() for _ in range(bits)])
 
+    # Generate the netlist
     spice_netlist = CircuitEnv.compile_spice_netlist('AnalogToDigital')
 
     print(spice_netlist)

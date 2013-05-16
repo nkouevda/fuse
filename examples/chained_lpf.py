@@ -1,5 +1,5 @@
 # Tomer Kaftan, Nikita Kouevda, Daniel Wong
-# 2013/05/12
+# 2013/05/15
 
 import os
 import sys
@@ -20,6 +20,8 @@ class LowPassFilter(CustomComponent):
 
     def build(self):
         self.inp >> Resistor(360) >> self.out
+
+        # Use the given cutoff
         Ground() >> Capacitor(1.0 / (2 * PI * 360 * self.cutoff)) >> self.out
 
 
@@ -27,8 +29,10 @@ class ChainedFilters(AbstractComponent):
     def __init__(self, filter_list):
         super().__init__([Node()], [Node()])
 
+        # Use the input from super().__init__
         inp = self.inp
 
+        # Connect each of the given filters in series
         for filter_component in filter_list:
             inp >>= filter_component
 
@@ -36,9 +40,13 @@ class ChainedFilters(AbstractComponent):
 
 
 def main():
+    # Use 5 chained filters
     filters = ChainedFilters([LowPassFilter(x) for x in [450] * 5])
+
+    # Connect them to an AC source and a resistor
     Ground() >> ACVoltageSource(1) >> filters >> Resistor('1K') >> Ground()
 
+    # Generate the netlist
     spice_netlist = CircuitEnv.compile_spice_netlist('ChainedLPF')
 
     # Add AC analysis
