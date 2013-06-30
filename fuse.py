@@ -1,5 +1,5 @@
 # Tomer Kaftan, Nikita Kouevda, Daniel Wong
-# 2013/05/12
+# 2013/06/29
 
 from collections import defaultdict
 
@@ -23,7 +23,8 @@ class CircuitEnv():
         self._frames.append(self.current_frame)
 
     def store_frame_as_subcircuit(self, name, connections):
-        assert len(self.current_frame[2]) != 0, name.upper() + ' is empty'
+        if len(self.current_frame[2]) == 0:
+            raise ValueError(name.upper() + ' is empty')
 
         self._subcircuits[name.upper()] = (connections, self.current_frame)
 
@@ -124,18 +125,19 @@ class CircuitEnv():
         return netlist_str, netlists
 
     def compile_spice_netlist(self, name):
-        out = name + '\n'
         global_netlist, node_netlists = self.frame_spice_netlist(
             self.current_frame)
-        out += global_netlist
+        out = name + '\n' + global_netlist
 
         for name, subcircuit in self._subcircuits.items():
             subcircuit_netlist, node_netlists = self.frame_spice_netlist(
                 subcircuit[1])
             pins = [str(node_netlists[node]) for node in subcircuit[0]]
 
-            assert len(pins) == len(set(pins)), \
-                'Component ' + name + ' has pins connected to the same netlist'
+            if len(set(pins)) < len(pins):
+                raise ValueError(
+                    'Component ' + name +
+                    ' has pins connected to the same netlist')
 
             out += '.SUBCKT ' + ' '.join([name] + pins) + '\n'
             out += subcircuit_netlist + '.ENDS\n'
@@ -265,16 +267,16 @@ class CustomComponent(Component):
     Allow for the impmlementation of subcircuits as single fuse components.
     """
 
-    def __init__(self, inp, out, componentName, explode=False):
+    def __init__(self, inp, out, name, explode=False):
         # Do not use a subcircuit for this component if explode is True
         if explode:
             AbstractComponent.__init__(self, inp, out)
             self.build()
         else:
             Component.__init__(
-                self, inp, out, 'X' + componentName, [componentName])
+                self, inp, out, 'X' + name, [name])
 
-            if not CircuitEnv.has_subcircuit(componentName):
+            if not CircuitEnv.has_subcircuit(name):
                 # Store the current circuit environment
                 prev_nums = flatten_node_nums(self.inp + self.out)
 
@@ -288,7 +290,7 @@ class CustomComponent(Component):
                 # Build the subcircuit and store it
                 self.build()
                 CircuitEnv.store_frame_as_subcircuit(
-                    componentName, flatten_node_nums(self.inp + self.out))
+                    name, flatten_node_nums(self.inp + self.out))
 
                 # Restore the previous circuit environment
                 CircuitEnv.pop_frame()
