@@ -1,13 +1,14 @@
+#!/usr/bin/env python3
+
 # Tomer Kaftan, Nikita Kouevda, Daniel Wong
-# 2013/05/15
+# 2013/06/29
 
 import os
 import sys
 from math import pi as PI
 
-# Add the location of the fuse source to the path before importing it
-sys.path.append(
-    os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
+# Add the parent directory to the path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 from fuse import *
 
