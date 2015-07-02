@@ -1,6 +1,3 @@
-<!-- Tomer Kaftan, Nikita Kouevda, Daniel Wong -->
-<!-- 2014/08/11 -->
-
 # fuse
 
 A Python library for circuit synthesis.

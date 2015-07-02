@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 
-# Tomer Kaftan, Nikita Kouevda, Daniel Wong
-# 2013/06/29
-
 import os
 import random
 import sys

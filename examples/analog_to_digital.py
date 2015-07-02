@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 
-# Tomer Kaftan, Nikita Kouevda, Daniel Wong
-# 2013/06/29
-
 """An analog to digital converter circuit.
 
 Based on <http://www.allaboutcircuits.com/vol_4/chpt_13/4.html>.
